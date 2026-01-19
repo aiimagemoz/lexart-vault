@@ -1,0 +1,35 @@
+name: Scaricatore Automatico Immagini
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: 'Incolla gli URL delle immagini separati da virgola'
+        required: true
+
+jobs:
+  download-job:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout del codice
+        uses: actions/checkout@v4
+
+      - name: Scaricamento file
+        run: |
+          mkdir -p gallery-images
+          cd gallery-images
+          IFS=',' read -ra ADDR <<< "${{ github.event.inputs.urls }}"
+          for url in "${ADDR[@]}"; do
+            clean_url=$(echo $url | xargs) # Rimuove spazi bianchi
+            echo "Scaricando: $clean_url"
+            curl -L -O "$clean_url"
+          done
+
+      - name: Salva nel repository
+        run: |
+          git config --global user.name "GitHub Action Bot"
+          git config --global user.email "actions@github.com"
+          git add gallery-images/
+          git commit -m "Aggiunte nuove immagini alla collezione" || echo "Nessuna modifica"
+          git push
